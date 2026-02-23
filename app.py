@@ -9,8 +9,37 @@ Uses gpt-4o-mini with a multi-agent pipeline:
 import gradio as gr
 from agents import PromptCowboyAgent, CodeGeneratorAgent, ReviewerAgent
 from config import OPENAI_API_KEY, MODEL
+import os, re, datetime
 
 # ─── Orchestrator ────────────────────────────────────────────────────────────
+def save_output_files(user_goal: str, optimized_prompt: str, final_code: str):
+    """Save prompt and generated code to output/project_name/"""
+    # Create a slug from the goal for the folder name
+    slug = re.sub(r'[^a-z0-9]+', '_', user_goal.lower())[:40].strip('_')
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder = os.path.join("output", f"{slug}_{timestamp}")
+    os.makedirs(folder, exist_ok=True)
+
+    # Save the optimized prompt
+    with open(os.path.join(folder, "optimized_prompt.md"), "w", encoding="utf-8") as f:
+        f.write(optimized_prompt)
+
+    # Detect multi-file output (Agent 2 labels them: # === filename.py ===)
+    file_blocks = re.split(r'#\s*={3,}\s*([\w./]+)\s*={3,}', final_code)
+    if len(file_blocks) > 1:
+        # Odd indexes are filenames, even indexes are code blocks
+        it = iter(file_blocks[1:])
+        for filename, code in zip(it, it):
+            filepath = os.path.join(folder, filename.strip())
+            os.makedirs(os.path.dirname(filepath) or folder, exist_ok=True)
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(code.strip())
+    else:
+        # Single file — save as main.py
+        with open(os.path.join(folder, "main.py"), "w", encoding="utf-8") as f:
+            f.write(final_code)
+
+    return folder
 
 def run_pipeline(user_goal: str, show_steps: bool):
     """
@@ -36,9 +65,11 @@ def run_pipeline(user_goal: str, show_steps: bool):
     final_output = reviewer.run(raw_code, user_goal)
     steps.append(("✅ Reviewer Agent", final_output))
 
+    saved_folder = save_output_files(user_goal, optimized_prompt, final_output)
+    print(f"[OK] Files saved to: {saved_folder}")
     # Build display
     if show_steps:
-        log = ""
+        log = f"📁 Saved to: {saved_folder}\n"
         for name, content in steps:
             log += f"\n{'='*60}\n{name}\n{'='*60}\n{content}\n"
         return optimized_prompt, final_output, log
