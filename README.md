@@ -33,7 +33,56 @@ Open your browser at: **http://localhost:7860**
 
 ---
 
-## 🧠 How the Agents Work
+## 🔄 Agent Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        USER INPUT                               │
+│              "What do you want to build?"                       │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  🤠  AGENT 1 — Prompt Cowboy                                    │
+│                                                                 │
+│  INPUT : Vague user goal                                        │
+│  ACTION: Applies Prompt Cowboy formula:                         │
+│          Role → Context → Task → Requirements → Output Format   │
+│  OUTPUT: Precision-engineered prompt (copy to Claude.ai!)       │
+└────────────────────────────┬────────────────────────────────────┘
+                             │  optimized prompt
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  ⚙️  AGENT 2 — Code Generator                                   │
+│                                                                 │
+│  INPUT : Optimized prompt from Agent 1                          │
+│  ACTION: Sends prompt to gpt-4o-mini with strict code-only      │
+│          system rules (type hints, docstrings, error handling)  │
+│  OUTPUT: Raw working code                                       │
+└────────────────────────────┬────────────────────────────────────┘
+                             │  raw code + original goal
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  ✅  AGENT 3 — Reviewer                                         │
+│                                                                 │
+│  INPUT : Raw code + original user goal                          │
+│  ACTION: Cross-checks goal vs code, fixes bugs, adds            │
+│          HOW TO RUN block + DEPENDENCIES comment                │
+│  OUTPUT: Final polished, documented, ready-to-run code          │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      GRADIO UI TABS                             │
+│  📝 Optimized Prompt  |  💻 Final Code  |  🔍 Pipeline Log     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Orchestration** is handled by `app.py` — it calls each agent sequentially, passing the output of one as the input to the next. No agent talks to another directly; the orchestrator owns the data flow.
+
+---
+
+## 🧠 Agent Reference
 
 | Agent | Role | Model |
 |-------|------|-------|
